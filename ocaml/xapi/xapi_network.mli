@@ -78,6 +78,7 @@ val create :
   name_label:string ->
   name_description:string ->
   mTU:int64 ->
+  is_default_bridge:bool ->
   other_config:(string * string) list ->
   tags:string list -> [ `network ] Ref.t
 

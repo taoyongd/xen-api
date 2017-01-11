@@ -161,20 +161,42 @@ let deregister_vif ~__context vif =
 let counter = ref 0
 let mutex = Mutex.create ()
 let stem = "xapi"
+let default_bridge_name = "br-int"
 
 let pool_introduce ~__context ~name_label ~name_description ~mTU ~other_config ~bridge =
   let r = Ref.make() and uuid = Uuid.make_uuid() in
   Db.Network.create ~__context ~ref:r ~uuid:(Uuid.to_string uuid)
     ~current_operations:[] ~allowed_operations:[]
-    ~name_label ~name_description ~mTU ~bridge
+    ~name_label ~name_description ~mTU ~is_default_bridge:false ~bridge
     ~other_config ~blobs:[] ~tags:[] ~default_locking_mode:`unlocked ~assigned_ips:[];
   r
 
-let create ~__context ~name_label ~name_description ~mTU ~other_config ~tags =
+let create ~__context ~name_label ~name_description ~mTU ~is_default_bridge ~other_config ~tags =
   Mutex.execute mutex (fun () ->
       let networks = Db.Network.get_all ~__context in
       let bridges = List.map (fun self -> Db.Network.get_bridge ~__context ~self) networks in
       let mTU = if mTU <= 0L then 1500L else mTU in
+      if is_default_bridge = true then 
+        let r = Ref.make () and uuid = Uuid.make_uuid () in
+        Db.Network.create ~__context ~ref:r ~uuid:(Uuid.to_string uuid)
+          ~current_operations:[] ~allowed_operations:[]
+          ~name_label ~name_description ~mTU ~is_default_bridge ~bridge:default_bridge_name
+          ~other_config ~blobs:[] ~tags ~default_locking_mode:`unlocked ~assigned_ips:[];
+        r
+      else 
+        let rec loop () =
+          let name = stem ^ (string_of_int !counter) in
+          incr counter; 
+          if List.mem name bridges then loop ()
+          else
+            let r = Ref.make () and uuid = Uuid.make_uuid () in
+            Db.Network.create ~__context ~ref:r ~uuid:(Uuid.to_string uuid)
+              ~current_operations:[] ~allowed_operations:[]
+              ~name_label ~name_description ~mTU ~is_default_bridge ~bridge:name
+              ~other_config ~blobs:[] ~tags ~default_locking_mode:`unlocked ~assigned_ips:[];
+            r in
+        loop ())
+     (*
       let rec loop () =
         let name = stem ^ (string_of_int !counter) in
         incr counter;
@@ -183,11 +205,11 @@ let create ~__context ~name_label ~name_description ~mTU ~other_config ~tags =
           let r = Ref.make () and uuid = Uuid.make_uuid () in
           Db.Network.create ~__context ~ref:r ~uuid:(Uuid.to_string uuid)
             ~current_operations:[] ~allowed_operations:[]
-            ~name_label ~name_description ~mTU ~bridge:name
+            ~name_label ~name_description ~mTU ~is_default_bridge ~bridge:name
             ~other_config ~blobs:[] ~tags ~default_locking_mode:`unlocked ~assigned_ips:[];
           r in
       loop ())
-
+      *)
 let destroy ~__context ~self =
   let vifs = Db.Network.get_VIFs ~__context ~self in
   let connected = List.filter (fun self ->

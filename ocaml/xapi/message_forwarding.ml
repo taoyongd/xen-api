@@ -2676,9 +2676,9 @@ module Forward = functor(Local: Custom_actions.CUSTOM_ACTIONS) -> struct
 
     (* Don't forward. These are just db operations. Networks are "attached" when required by hosts that read db entries.
        		   Bridges corresponding to networks are removed by per-host GC threads that read from db. *)
-    let create ~__context ~name_label ~name_description ~mTU ~other_config ~tags =
+    let create ~__context ~name_label ~name_description ~mTU  ~is_default_bridge ~other_config ~tags =
       info "Network.create: name_label = '%s'" name_label;
-      Local.Network.create ~__context ~name_label ~name_description ~mTU ~other_config ~tags
+      Local.Network.create ~__context ~name_label ~name_description ~mTU ~is_default_bridge ~other_config ~tags
 
     let attach ~__context ~network ~host =
       info "Network.attach: network = '%s'; host = '%s'" (network_uuid ~__context network) (host_uuid ~__context host);

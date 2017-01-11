@@ -546,6 +546,7 @@ let create_or_get_network_on_master __context rpc session_id (network_ref, netwo
         ~name_label:network.API.network_name_label
         ~name_description:network.API.network_name_description
         ~mTU:network.API.network_MTU
+        ~is_default_bridge:network.API.network_is_default_bridge
         ~other_config:network.API.network_other_config
         ~tags:network.API.network_tags
     end
