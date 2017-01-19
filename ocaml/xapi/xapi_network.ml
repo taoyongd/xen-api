@@ -176,13 +176,21 @@ let create ~__context ~name_label ~name_description ~mTU ~is_default_bridge ~oth
       let networks = Db.Network.get_all ~__context in
       let bridges = List.map (fun self -> Db.Network.get_bridge ~__context ~self) networks in
       let mTU = if mTU <= 0L then 1500L else mTU in
-      if is_default_bridge = true then 
+      let dbg = Context.string_of_task __context in
+      let current = Net.Bridge.get_all dbg () in
+      if is_default_bridge = true then (
+        List.iter (info "%s ") current;
+        if List.mem default_bridge_name bridges then 
+          raise (Api_errors.Server_error (Api_errors.default_bridge_name_already_binded, [Ref.string_of Ref.null ]));
+        if not(List.mem default_bridge_name current) then
+          raise (Api_errors.Server_error (Api_errors.default_bridge_not_available, [ Ref.string_of Ref.null ]));
         let r = Ref.make () and uuid = Uuid.make_uuid () in
         Db.Network.create ~__context ~ref:r ~uuid:(Uuid.to_string uuid)
           ~current_operations:[] ~allowed_operations:[]
           ~name_label ~name_description ~mTU ~is_default_bridge ~bridge:default_bridge_name
           ~other_config ~blobs:[] ~tags ~default_locking_mode:`unlocked ~assigned_ips:[];
         r
+      )
       else 
         let rec loop () =
           let name = stem ^ (string_of_int !counter) in

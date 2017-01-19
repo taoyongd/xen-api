@@ -648,6 +648,10 @@ let _ =
     ~doc:"Operation cannot proceed while a tunnel exists on this interface." ();
   error Api_errors.bridge_not_available [ "bridge" ]
     ~doc:"Could not find bridge required by VM." ();
+  error Api_errors.default_bridge_not_available [ "default_bridge" ]
+    ~doc:"Could not find default bridge br-int." ();
+  error Api_errors.default_bridge_name_already_binded [ "default_bridge_name_binded" ]
+    ~doc:"default_bridge name br-int already binding with one network." ();
   (* VM specific errors *)
   error Api_errors.vm_is_protected [ "vm" ]
     ~doc:"This operation cannot be performed because the specified VM is protected by xHA" ();
