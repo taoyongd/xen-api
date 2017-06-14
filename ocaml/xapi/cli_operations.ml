@@ -4945,3 +4945,34 @@ module SDN_controller = struct
     let ref = Client.SDN_controller.get_by_uuid rpc session_id uuid in
     Client.SDN_controller.forget rpc session_id ref
 end
+
+module USB = struct
+  let introduce printer rpc session_id params =
+   (* let name_label = List.assoc "name-label" params in
+    let descr = List.assoc "name-description" params in*)
+    let vm=Client.VM.get_by_uuid ~rpc ~session_id ~uuid:(List.assoc "vm-uuid" params) in
+    let hostbus = List.assoc "hostbus" params in
+    let hostaddr = List.assoc "hostaddr" params in
+    let sn = List.assoc "sn" params in
+    (*let location = List.assoc "location" params in
+    let version = List.assoc "version" params in*)
+    let usb = Client.USB.introduce rpc session_id vm hostbus hostaddr sn in
+    let uuid = Client.USB.get_uuid rpc session_id usb in
+    printer (Cli_printer.PList [uuid])
+
+  let destroy printer rpc session_id params =
+    let usb = Client.USB.get_by_uuid rpc session_id (List.assoc "uuid" params) in
+    ignore(Client.USB.destroy rpc session_id usb)
+
+  let attach printer rpc session_id params =
+    let usb = Client.USB.get_by_uuid ~rpc ~session_id ~uuid:(List.assoc "uuid" params) in
+   (* let vm_uuid=List.assoc "vm-uuid" params in
+    let vm = Client.VM.get_by_uuid rpc session_id vm_uuid in*)
+    Client.USB.attach rpc session_id usb
+
+  let detach printer rpc session_id params =
+    let usb = Client.USB.get_by_uuid ~rpc ~session_id ~uuid:(List.assoc "uuid" params) in
+   (* let vm_uuid=List.assoc "vm-uuid" params in
+    let vm = Client.VM.get_by_uuid rpc session_id vm_uuid in*)
+    Client.USB.detach rpc session_id usb 
+end

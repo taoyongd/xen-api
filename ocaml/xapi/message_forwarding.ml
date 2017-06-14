@@ -308,6 +308,13 @@ module Forward = functor(Local: Custom_actions.CUSTOM_ACTIONS) -> struct
         Ref.string_of vdi
     with _ -> "invalid"
 
+  let usb_uuid ~__context usb = 
+    try if Pool_role.is_master () then
+        Db.USB.get_uuid __context usb
+      else
+        Ref.string_of usb
+    with _ -> "invalid"
+
   let vif_uuid ~__context vif =
     try if Pool_role.is_master () then
         Db.VIF.get_uuid __context vif
@@ -3947,6 +3954,7 @@ module Forward = functor(Local: Custom_actions.CUSTOM_ACTIONS) -> struct
            Db.VGPU.set_scheduled_to_be_resident_on ~__context ~self ~value:Ref.null
         )
   end
+
   module Pool_update = struct
     let introduce ~__context ~vdi =
       info "Pool_update.introduce: vdi = '%s'" (vdi_uuid ~__context vdi);
@@ -4072,6 +4080,25 @@ module Forward = functor(Local: Custom_actions.CUSTOM_ACTIONS) -> struct
     let forget ~__context ~self =
       info "SDN_controller.forget: sdn_controller = '%s'" (sdn_controller_uuid ~__context self);
       Local.SDN_controller.forget ~__context ~self
+  end
+
+  module USB = struct
+    let introduce ~__context ~vM ~hostbus ~hostaddr ~sn =
+      info "USB.create :hostbus = '%s'; hostaddr = '%s'" hostbus hostaddr ;
+      Local.USB.introduce ~__context ~vM ~hostbus ~hostaddr ~sn
+
+    let attach ~__context ~self =
+      (*info "USB.attach: usb = '%s'; vm = '%s'" (usb_uuid ~__context self) (vm_uuid ~__context vm);*)
+      info "USB.attach: usb = '%s'" (usb_uuid ~__context self);
+      Local.USB.attach ~__context ~self 
+
+    let detach ~__context ~self =
+      info "USB.detach: usb = '%s'" (usb_uuid ~__context self) ;
+      Local.USB.detach ~__context ~self
+
+    let destroy ~__context ~self =
+      info "USB.forget: usb = '%s'" (usb_uuid ~__context self);
+      Local.USB.destroy ~__context ~self
   end
 
 end

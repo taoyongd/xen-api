@@ -170,6 +170,7 @@ let _pvs_proxy = "PVS_proxy"
 let _pvs_cache_storage = "PVS_cache_storage"
 let _feature = "Feature"
 let _sdn_controller = "SDN_controller"
+let _usb = "USB"
 
 
 (** All the various static role names *)
@@ -368,8 +369,8 @@ let call ~name ?(doc="") ?(in_oss_since=Some "3.0.3") ?in_product_since ?interna
     ?(params=[]) ?versioned_params ?lifecycle ?(doc_tags=[])
     ?forward_to () =
   (* if you specify versioned_params then these get put in the params field of the message record;
-     	 * otherwise params go in with no default values and param_release=call_release...
-     	 *)
+       * otherwise params go in with no default values and param_release=call_release...
+       *)
   if lifecycle = None && in_product_since = None then
     failwith ("Lifecycle for message '" ^ name ^ "' not specified");
   let lifecycle = match lifecycle with
@@ -2047,7 +2048,7 @@ let vm_set_memory_dynamic_range = call
     ~name:"set_memory_dynamic_range"
     ~in_product_since:rel_midnight_ride
     ~doc:"Set the minimum and maximum amounts of physical memory the VM is \
-          		allowed to use."
+              allowed to use."
     ~allowed_roles:_R_VM_POWER_ADMIN
     ~params:[
       Ref _vm, "self", "The VM";
@@ -2089,7 +2090,7 @@ let vm_set_memory_static_range = call
     ~name:"set_memory_static_range"
     ~in_product_since:rel_midnight_ride
     ~doc:"Set the static (ie boot-time) range of virtual memory that the VM is \
-          		allowed to use."
+              allowed to use."
     ~allowed_roles:_R_VM_POWER_ADMIN
     ~params:[Ref _vm, "self", "The VM";
              Int, "min", "The new minimum value";
@@ -2306,7 +2307,7 @@ let vm_suspend = call
     ~name:"suspend"
     ~doc:"Suspend the specified VM to disk.  This can only be called when the specified VM is in the Running state."
     ~params:[Ref _vm, "vm", "The VM to suspend"]
-    (*	    Bool, "live", "If set to true, perform a live hibernate; otherwise suspend the VM before commencing hibernate" *)
+    (*      Bool, "live", "If set to true, perform a live hibernate; otherwise suspend the VM before commencing hibernate" *)
     ~errs:[Api_errors.vm_bad_power_state; Api_errors.other_operation_in_progress; Api_errors.operation_not_allowed;
            Api_errors.vm_is_template]
     ~allowed_roles:_R_VM_OP
@@ -3423,7 +3424,7 @@ let vbd_eject = call
 let vbd_insert = call
     ~name:"insert"
     ~in_product_since:rel_rio
-    ~doc:"Insert new media into the device"
+    ~doc:"Insert new media ito the device"
     ~params:[Ref _vbd, "vbd", "The vbd representing the CDROM-like device";
              Ref _vdi, "vdi", "The new VDI to 'insert'"]
     ~errs:[Api_errors.vbd_not_removable_media; Api_errors.vbd_not_empty]
@@ -3511,7 +3512,7 @@ let field ?(in_oss_since = Some "3.0.3") ?in_product_since ?(internal_only = fal
     ?(map_keys_roles=[]) (* list of (key_name,(writer_roles)) for a map field *)
     ?lifecycle ?(doc_tags=[]) name desc =
   (* in_product_since currently defaults to 'Some rel_rio', for backwards compatibility.
-     	 * This should eventually become 'None'. *)
+       * This should eventually become 'None'. *)
   let in_product_since = match in_product_since with None -> Some rel_rio | x -> x in
   if lifecycle = None && in_product_since = None then
     failwith ("Lifecycle for field '" ^ name ^ "' not specified");
@@ -5506,8 +5507,8 @@ let pif =
       field ~in_oss_since:None ~ty:String ~lifecycle:[Prototyped, rel_tampa, ""] ~qualifier:DynamicRO "ipv6_gateway" "IPv6 gateway" ~default_value:(Some (VString ""));
       field ~in_oss_since:None ~ty:pif_primary_address_type ~lifecycle:[Prototyped, rel_tampa, ""] ~qualifier:DynamicRO "primary_address_type" "Which protocol should define the primary address of this interface" ~default_value:(Some (VEnum "IPv4"));
       field ~in_oss_since:None ~ty:Bool ~lifecycle:[Published, rel_vgpu_productisation, ""] ~qualifier:StaticRO "managed" "Indicates whether the interface \
-                                                                                                                           		is managed by xapi. If it is not, then xapi will not configure the interface, the commands PIF.plug/unplug/reconfigure_ip(v6) \
-                                                                                                                           		can not be used, nor can the interface be bonded or have VLANs based on top through xapi." ~default_value:(Some (VBool true));
+                                                                                                                              is managed by xapi. If it is not, then xapi will not configure the interface, the commands PIF.plug/unplug/reconfigure_ip(v6) \
+                                                                                                                              can not be used, nor can the interface be bonded or have VLANs based on top through xapi." ~default_value:(Some (VBool true));
       field ~lifecycle:[Published, rel_creedence, ""] ~qualifier:DynamicRO ~ty:(Map(String, String)) ~default_value:(Some (VMap [])) "properties" "Additional configuration properties for the interface.";
       field ~lifecycle:[Published, rel_dundee, ""] ~qualifier:DynamicRO ~ty:(Set(String)) ~default_value:(Some (VSet [])) "capabilities" "Additional capabilities on the interface.";
     ]
@@ -6493,9 +6494,9 @@ let vdi_checksum = call
     ~doc:"Internal function to calculate VDI checksum and return a string"
     ~hide_from_docs:true
     ~allowed_roles:_R_VM_ADMIN (* Conceptually, this is not correct. We do it
-                                  	                              this way only to follow the previous
-                                  	                              convention. It is supposed to fix by future
-                                  	                              version of RBAC *)
+                                                                  this way only to follow the previous
+                                                                  convention. It is supposed to fix by future
+                                                                  version of RBAC *)
     ()
 
 let vdi_read_database_pool_uuid = call
@@ -7643,9 +7644,9 @@ let hvm =
 (*
 let power_behaviour =
   Enum ("power_behaviour", [ "destroy", "destroy the VM state";
-			     "restart", "automatically restart the VM";
-			     "preserve", "leave VM running";
-			     "rename_restart", "leave VM running and restart a new one" ])
+           "restart", "automatically restart the VM";
+           "preserve", "leave VM running";
+           "rename_restart", "leave VM running and restart a new one" ])
 *)
 let on_crash_behaviour =
   Enum ("on_crash_behaviour", [ "destroy", "destroy the VM state";
@@ -7833,8 +7834,8 @@ let vm =
          field ~qualifier:DynamicRO ~ty:(Ref _vm_metrics) "metrics" "metrics associated with this VM";
          field ~qualifier:DynamicRO ~ty:(Ref _vm_guest_metrics) "guest_metrics" "metrics associated with the running guest";
          (* This was an internal field in Rio, Miami beta1, Miami beta2 but is now exposed so that
-            	   it will be included automatically in Miami GA exports and can be restored, important if
-            	   the VM is in a suspended state *)
+                 it will be included automatically in Miami GA exports and can be restored, important if
+                 the VM is in a suspended state *)
          field ~in_oss_since:None ~internal_only:false ~in_product_since:rel_miami ~qualifier:DynamicRO ~ty:String "last_booted_record" "marshalled value containing VM record at time of last boot, updated dynamically to reflect the runtime state of the domain" ~default_value:(Some (VString ""));
          field ~in_oss_since:None ~ty:String "recommendations" "An XML specification of recommended values and ranges for properties of this VM";
          field ~effect:true ~in_oss_since:None ~ty:(Map(String, String)) ~in_product_since:rel_miami ~qualifier:RW "xenstore_data" "data to be inserted into the xenstore tree (/local/domain/<domid>/vm-data) after the VM is created." ~default_value:(Some (VMap []));
@@ -9683,6 +9684,100 @@ module SDN_controller = struct
 end
 let sdn_controller = SDN_controller.obj
 
+module USB = struct
+  let lifecycle = [Published, rel_falcon, ""]
+  let introduce = call
+      ~name:"introduce"
+      ~in_oss_since:None
+      ~versioned_params:[
+       (* {param_type=String; param_name="name_label"; param_doc="The name of the usb record"; param_release=falcon_release; param_default=None};
+        {param_type=String; param_name="name_description"; param_doc="The description of the usb record"; param_release=falcon_release; param_default=None};*)
+        {param_type=Ref _vm; param_name="vM"; param_doc="The VM"; param_release=falcon_release; param_default=None};
+        {param_type=String; param_name="hostbus"; param_doc="Hostbus of the usb device"; param_release=falcon_release; param_default=None};
+        {param_type=String; param_name="hostaddr"; param_doc="Hostaddr of the usb device"; param_release=falcon_release; param_default=None};
+        {param_type=String; param_name="sn"; param_doc="Serial number of the usb device"; param_release=falcon_release; param_default=None};
+     (*   {param_type=String; param_name="version"; param_doc="Version of the usb device"; param_release=falcon_release; param_default=None};
+        {param_type=String; param_name="location"; param_doc="location information"; param_release=falcon_release; param_default=None};
+        {param_type=String; param_name="other_config"; param_doc="other config"; param_release=falcon_release; param_default=None};*)
+      ] 
+      ~lifecycle
+      ~doc:"Create a new usb record in the database only"
+      ~result:(Ref _usb, "The ref of the newly created USB record.")
+      ~allowed_roles:_R_VM_ADMIN
+      ()
+  
+  let usb_dom0_access =
+  Enum ("usb_dom0_access", [
+      "enabled", "dom0 can access this device as normal";
+      "disable_on_reboot", "On host reboot dom0 will be blocked from accessing this device";
+      "disabled", "dom0 cannot access this device";
+      "enable_on_reboot", "On host reboot dom0 will be allowed to access this device";
+    ])
+
+  let attach = call
+      ~name:"attach"
+      ~doc:"Attach a usb device to vm."
+      ~params:[ Ref _usb, "self", "The usb representing usb devices" ]
+      ~lifecycle
+      ~allowed_roles:_R_VM_OP
+      ()
+
+  let detach = call
+      ~name:"detach"
+      ~doc:"Detach the usb device from the vm."
+      ~params: [ Ref _usb, "self", "usb deivce"]
+      ~lifecycle
+      ~allowed_roles:_R_VM_OP
+      ()
+
+  let destroy = call
+      ~name:"destroy"
+      ~in_oss_since:None
+      ~params:[ Ref _usb, "self", "The USB to destroy about" ]
+      ~doc:"Removes a USB record from the database"
+      ~lifecycle
+      ~allowed_roles:_R_VM_ADMIN
+      ()
+
+  let obj =
+    create_obj
+      ~name: _usb
+      ~descr:"Describes the usb device"
+      ~doccomments:[]
+      ~gen_constructor_destructor:false
+      ~gen_events:true
+      ~in_db:true
+      ~lifecycle
+      ~persist:PersistEverything
+      ~in_oss_since:None
+      ~messages_default_allowed_roles:_R_VM_ADMIN
+      ~contents:
+        [ 
+         uid    _usb ~lifecycle;
+         field ~qualifier:StaticRO ~ty:(Ref _vm) "VM" "the virtual machine";
+       (*  filed ~qualifier:StaticRO ~ty:String ~lifecycle "name_label" "name of the usb " ~default_value:(Some (VString ""));
+         field ~qualifier:StaticRO ~ty:(Ref _pci) ~lifecycle "PCI" "Link to underlying PCI device" ~default_value:(Some (VRef null_ref)) ; 
+         field ~qualifier:DynamicRO ~ty:(Ref _host) ~lifecycle "host" "Host that own the usb" ~default_value:(Some (VRef null_ref))  ;*)
+         field ~qualifier:StaticRO ~ty:String ~lifecycle "hostbus" "usb device bus in host" ~default_value:(Some (VString ""));
+         field ~qualifier:StaticRO ~ty:String ~lifecycle "hostaddr" "usb device addr in host" ~default_value:(Some (VString "")); 
+         field ~qualifier:StaticRO ~ty:String ~lifecycle "sn" "serial Number of the usb device"~default_value:(Some (VString ""));
+         field ~qualifier:DynamicRO ~ty:String ~lifecycle "location" "location information" ~default_value:(Some (VString "")); 
+         field ~qualifier:StaticRO ~ty:String ~lifecycle "version" "usb device version" ~default_value:(Some (VString ""));
+         field ~qualifier:DynamicRO ~ty:Bool ~lifecycle "currently_attached" "true when usb device is attached to vm" ~default_value:(Some (VBool false));
+       (*field ~qualifier:RW ~ty:(Map (String,String)) ~lifecycle "other_config" "Additional configuration" ~default_value:(Some (VMap []));  
+         field ~qualifier:DynamicRO ~ty:(usb_dom0_access) ~lifecycle ~default_value:(Some (VEnum "enabled")) "dom0_access" "The accessibility of this device from dom0";
+         field ~qualifier:DynamicRO ~ty:Bool ~lifecycle ~default_value:(Some (VBool false)) "is_system_display_device" "Is this device the system display device";*)
+        ]
+      ~messages:
+        [ introduce
+        ; attach
+        ; detach
+        ; destroy
+        ]
+      ()
+end
+let usb = USB.obj
+
 (******************************************************************************************)
 
 (** All the objects in the system in order they will appear in documentation: *)
@@ -9749,6 +9844,7 @@ let all_system =
     pvs_cache_storage;
     feature;
     sdn_controller;
+    usb;
   ]
 
 (** These are the pairs of (object, field) which are bound together in the database schema *)
@@ -9927,6 +10023,7 @@ let expose_get_all_messages_for = [
   _pvs_cache_storage;
   _feature;
   _sdn_controller;
+  _usb;
 ]
 
 let no_task_id_for = [ _task; (* _alert; *) _event ]

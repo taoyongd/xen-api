@@ -393,6 +393,19 @@ module MD = struct
       persistent = (try Db.VDI.get_on_boot ~__context ~self:vbd.API.vBD_VDI = `persist with _ -> true);
     }
 
+  let of_usb ~__context ~vm ~usb =
+    let open Usb in
+    (*let id = usb.API.uSB_uuid in*)
+    let hostbus = usb.API.uSB_hostbus in
+    let hostaddr = usb.API.uSB_hostaddr in
+    let sn = usb.API.uSB_sn in
+    {
+      id = (vm.API.vM_uuid, usb.API.uSB_uuid); 
+      hostbus = hostbus;
+      hostaddr = hostaddr;
+      sn = sn;
+    }
+
   let of_pvs_proxy ~__context vif proxy =
     let site = Db.PVS_proxy.get_site ~__context ~self:proxy in
     let site_uuid = Db.PVS_site.get_uuid ~__context ~self:site in
@@ -1068,6 +1081,10 @@ module Xenops_cache = struct
   let update_vm id info =
     let existing = Opt.default empty (find id) in
     update id { existing with vm = info }
+
+(*  let update_usb id info = 
+    let existing = Opt.default empty (find id) in
+    update id {existing with usb = info }*)
 
   let list_nolock () = Hashtbl.fold (fun id _ acc -> id :: acc) cache []
 end
@@ -1893,6 +1910,9 @@ let update_vgpu ~__context id =
   with e ->
     error "xenopsd event: Caught %s while updating VGPU" (string_of_exn e)
 
+let update_usb ~__context queue_name id =
+  debug "only for test usb";
+
 exception Not_a_xenops_task
 let wrap queue_name id = TaskHelper.Xenops (queue_name, id)
 let unwrap x = match x with | TaskHelper.Xenops (queue_name, id) -> queue_name, id | _ -> raise Not_a_xenops_task
@@ -1970,6 +1990,11 @@ let rec events_watch ~__context cancel queue_name from =
                debug "xenops event on VGPU %s.%s" (fst id) (snd id);
                update_vgpu ~__context id
              end
+           | Usb id ->
+             if Events_from_xenopsd.are_suppressed (fst id) 
+             then debug "ignoring xenops event on Usb %s.%s" (fst id) (snd id);
+             update_usb ~__context queue_name id
+
            | Task id ->
              debug "xenops event on Task %s" id;
              update_task ~__context queue_name id
@@ -3031,3 +3056,66 @@ let task_cancel ~__context ~self =
   with
   | Not_found -> false
   | Not_a_xenops_task -> false
+
+let md_of_usb ~__context ~self =
+  let vm = Db.USB.get_VM ~__context ~self in
+  MD.of_usb ~__context ~vm:(Db.VM.get_record ~__context ~self:vm) ~usb:(Db.USB.get_record ~__context ~self) 
+
+let usb_eject_hvm ~__context ~self =
+  let vm = Db.USB.get_VM ~__context ~self in
+  let queue_name = queue_of_vm ~__context ~self:vm in
+  transform_xenops_exn ~__context ~vm queue_name
+    (fun () ->
+       assert_resident_on ~__context ~self:vm;
+       let usb = md_of_usb ~__context ~self in
+       info "xenops: USB.eject %s.%s" (fst usb.Usb.id) (snd usb.Usb.id);
+       let dbg = Context.string_of_task __context in
+       let module Client = (val make_client queue_name : XENOPS) in
+       Client.USB.eject dbg usb.Usb.id |> sync_with_task __context queue_name;
+       Events_from_xenopsd.wait queue_name dbg (fst usb.Usb.id) ();
+       Events_from_xapi.wait ~__context ~self:vm;
+      (* if not (Db.USB.get_empty ~__context ~self) then
+         raise Api_errors.(Server_error(internal_error, [
+             Printf.sprintf "usb_eject_hvm: The USB %s has not been ejected" (Ref.string_of self)]));*)
+    )
+
+let usb_insert_hvm ~__context ~self =
+  let vm = Db.USB.get_VM ~__context ~self in
+  let queue_name = queue_of_vm ~__context ~self:vm in
+  transform_xenops_exn ~__context ~vm queue_name
+    (fun () ->
+       assert_resident_on ~__context ~self:vm;
+       let usb = md_of_usb ~__context ~self in
+       info "xenops: USB.insert %s.%s" (fst usb.Usb.id) (snd usb.Usb.id);
+       let dbg = Context.string_of_task __context in
+       let module Client = (val make_client queue_name : XENOPS) in
+       Client.USB.insert dbg usb.Usb.id |> sync_with_task __context queue_name;
+       Events_from_xenopsd.wait queue_name dbg (fst usb.Usb.id) ();
+       Events_from_xapi.wait ~__context ~self:vm;
+      (* if (Db.USB.get_empty ~__context ~self) then
+         raise Api_errors.(Server_error(internal_error, [
+             Printf.sprintf "usb_insert_hvm: The USB  %s is ejected" (Ref.string_of self)]));*)
+    )
+
+let usb_ejectable ~__context ~self =
+  let dbg = Context.string_of_task __context in
+  let vm = Db.USB.get_VM ~__context ~self in
+  let id = Db.VM.get_uuid ~__context ~self:vm in
+  let queue_name = queue_of_vm ~__context ~self:vm in
+  let module Client = (val make_client queue_name : XENOPS) in
+  let _, state = Client.VM.stat dbg id in
+  state.Vm.hvm
+
+let usb_insert ~__context ~self =
+  if usb_ejectable ~__context ~self then
+    usb_insert_hvm ~__context ~self
+  else
+    raise Api_errors.(Server_error(internal_error, [
+             Printf.sprintf "usb_insert: Unable to insert usb %s" (Ref.string_of self)]))
+
+let usb_eject ~__context ~self =
+  if usb_ejectable ~__context ~self then
+    usb_eject_hvm ~__context ~self
+  else
+    raise Api_errors.(Server_error(internal_error, [
+             Printf.sprintf "usb_insert: Unable to eject usb %s" (Ref.string_of self)]))

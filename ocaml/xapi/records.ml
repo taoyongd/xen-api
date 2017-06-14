@@ -1995,3 +1995,23 @@ let sdn_controller_record rpc session_id sdn_controller =
         make_field ~name:"port"                ~get:(fun () -> Int64.to_string (x ()).API.sDN_controller_port) ();
       ]}
 
+let usb_record rpc session_id usb =
+  let _ref = ref usb in
+  let empty_record = ToGet (fun () -> Client.USB.get_record rpc session_id !_ref) in
+  let record = ref empty_record in
+  let x () = lzy_get record in
+  { setref=(fun r -> _ref := r; record := empty_record );
+    setrefrec=(fun (a,b) -> _ref := a; record := Got b);
+    record=x;
+    getref=(fun () -> !_ref);
+    fields =
+      [
+        make_field ~name:"uuid" ~get:(fun () -> (x ()).API.uSB_uuid) ();
+        make_field ~name:"vm-uuid"
+          ~get:(fun () -> get_uuid_from_ref (x ()).API.uSB_VM) ();
+        make_field ~name:"vm-name-label"
+          ~get:(fun () -> get_name_from_ref (x ()).API.uSB_VM) ();
+        make_field ~name:"hostbus" ~get:(fun () -> (x ()).API.uSB_hostbus) ();
+        make_field ~name:"hostaddr" ~get:(fun () -> (x ()).API.uSB_hostaddr) ();
+        make_field ~name:"sn" ~get:(fun () -> (x ()).API.uSB_sn) ();
+      ]}
