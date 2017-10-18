@@ -1541,6 +1541,11 @@ module Forward = functor(Local: Custom_actions.CUSTOM_ACTIONS) -> struct
         then vm
         else Xapi_vm_snapshot.create_vm_from_snapshot ~__context ~snapshot in
 
+      (* As when vm snapshot is not allowed if vm has VUSBs, so revert should be disallowed *)
+      let vm_VUSBs = Db.VM.get_VUSBs ~__context ~self:vm in
+        if vm_VUSBs <> [] then
+          raise (Api_errors.Server_error(Api_errors.vm_has_vusbs, [Ref.string_of vm]));
+
       let local_fn = Local.VM.revert ~snapshot in
       let forward_fn session_id rpc = Local.VM.revert ~__context ~snapshot in
 
