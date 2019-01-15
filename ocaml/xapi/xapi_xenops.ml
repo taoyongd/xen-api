@@ -1856,8 +1856,10 @@ let update_vgpu ~__context id =
                  if vgpu_record.API.vGPU_currently_attached
                  then Db.VGPU.set_currently_attached ~__context
                      ~self:vgpu ~value:false;
-                 try Client.VGPU.remove dbg id
-                 with e -> debug "VGPU.remove failed: %s" (Printexc.to_string e)
+               end;
+               if not(state.plugged || state.active) then begin
+                 debug "VGPU.remove %s.%s" (fst id) (snd id);
+                 (try Client.VGPU.remove dbg id with e -> debug "VGPU.remove failed: %s" (Printexc.to_string e))
                end) info;
           Xenops_cache.update_vgpu id (Opt.map snd info)
         end
